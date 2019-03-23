@@ -7,15 +7,19 @@ conn = None
 app = QApplication(sys.argv)
 window = chat.Window()
 
-def send(self):
+
+def send():
     text = window.chatText.text()
     font = window.chat.font()
     font.setPointSize(13)
     window.chat.setFont(font)
+    try:
+        global conn
+        conn.send(text.encode("utf-8"))
+    except ConnectionResetError:
+        return window.chat.append("You want write with void ;)?")
     textformatted = '{:>80}'.format(text)
     window.chat.append(textformatted)
-    global conn
-    conn.send(text.encode("utf-8"))
     window.chatText.setText("")
 
 
@@ -57,9 +61,13 @@ class ClientThread(Thread):
 
     def run(self):
         while True:
-            global conn
-            data = conn.recv(2048)
-            window.chat.append(data.decode("utf-8"))
+            try:
+                global conn
+                data = conn.recv(2048)
+                window.chat.append(data.decode("utf-8"))
+            except ConnectionResetError:
+                window.chat.append("User: " + self.ip + " disconnect")
+                break
 
 
 if __name__ == '__main__':

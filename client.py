@@ -8,15 +8,19 @@ client_conn = None
 app = QApplication(sys.argv)
 window = chat.Window()
 
+
 def send():
     text = window.chatText.text()
     font = window.chat.font()
     font.setPointSize(13)
     window.chat.setFont(font)
+    try:
+        global client_conn
+        client_conn.send(text.encode("utf-8"))
+    except ConnectionResetError:
+        return window.chat.append("Server lost connection with you...")
     textformatted = '{:>80}'.format(text)
     window.chat.append(textformatted)
-    global client_conn
-    client_conn.send(text.encode("utf-8"))
     window.chatText.setText("")
 
 
@@ -33,8 +37,13 @@ class ClientThread(Thread):
         client_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_conn.connect((host, port))
         while True:
-            data = client_conn.recv(buffer_size)
-            window.chat.append(data.decode("utf-8"))
+            try:
+                data = client_conn.recv(buffer_size)
+                window.chat.append(data.decode("utf-8"))
+            except ConnectionResetError:
+                pass
+
+
 
 
 if __name__ == '__main__':
