@@ -31,10 +31,10 @@ class ServerThread(Thread):
     def run(self):
         IP = '0.0.0.0'
         PORT = 80
-        BUFFER_SIZE = 20
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         server.bind((IP, PORT))
         threads = []
 
