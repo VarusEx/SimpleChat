@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QApplication
 import chat
-import socket, sys
+import socket
+import sys
+import net_utils
 from threading import Thread
 
 
@@ -14,11 +16,11 @@ def send():
     font = window.chat.font()
     font.setPointSize(13)
     window.chat.setFont(font)
-    try:
-        global client_conn
-        client_conn.send(text.encode("utf-8"))
-    except ConnectionResetError:
-        return window.chat.append("Server lost connection with you...")
+    state = net_utils.ping(socket.gethostname())
+    if state is not None:
+        return print(state)
+    global client_conn
+    client_conn.send(text.encode("utf-8"))
     textformatted = '{:>80}'.format(text)
     window.chat.append(textformatted)
     window.chatText.setText("")
