@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 import chat
 import socket
 import sys
@@ -16,9 +16,6 @@ def send():
     font = window.chat.font()
     font.setPointSize(13)
     window.chat.setFont(font)
-    state = net_utils.ping(socket.gethostname())
-    if state is not None:
-        return print(state)
     global client_conn
     client_conn.send(text.encode("utf-8"))
     textformatted = '{:>80}'.format(text)
@@ -32,19 +29,21 @@ class ClientThread(Thread):
         self.window = window
 
     def run(self):
-        host = socket.gethostname()
-        port = 80
-        buffer_size = 2000
-        global client_conn
-        client_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_conn.connect((host, port))
         while True:
             try:
-                data = client_conn.recv(buffer_size)
-                window.chat.append(data.decode("utf-8"))
-            except ConnectionResetError:
-                pass
-
+                host = socket.gethostname()
+                port = 80
+                buffer_size = 2000
+                global client_conn
+                client_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client_conn.connect((host, port))
+                #QMessageBox.information(QMessageBox(), "Status Connect", "Connected with server", QMessageBox.Ok)
+                while True:
+                        data = client_conn.recv(buffer_size)
+                        window.chat.append(data.decode("utf-8"))
+            except ConnectionError as error:
+                print(error)
+                print("Error with connect")
 
 
 
@@ -55,3 +54,4 @@ if __name__ == '__main__':
     client.start()
     window.exec()
     sys.exit(app.exec_())
+

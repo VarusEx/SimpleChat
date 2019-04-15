@@ -1,32 +1,24 @@
-from PyQt5.QtWidgets import QApplication
-import chat
 import socket, sys
-from threading import Thread
+from threading import Thread , active_count
 
 conn = None
-app = QApplication(sys.argv)
-window = chat.Window()
+clients = []
+threads = []
 
 
-def send():
-    text = window.chatText.text()
-    font = window.chat.font()
-    font.setPointSize(13)
-    window.chat.setFont(font)
+def send(text, writer):
+    print(active_count())
     try:
-        global conn
-        conn.send(text.encode("utf-8"))
+        for c in clients:
+            if c is not writer:
+                c.send(text.encode("utf-8"))
     except ConnectionResetError:
-        return window.chat.append("You want write with void ;)?")
-    textformatted = '{:>80}'.format(text)
-    window.chat.append(textformatted)
-    window.chatText.setText("")
+        return print("Something is bad")
 
 
 class ServerThread(Thread):
-    def __init__(self, window):
+    def __init__(self):
         Thread.__init__(self)
-        self.window = window
 
     def run(self):
         IP = '0.0.0.0'
@@ -36,14 +28,16 @@ class ServerThread(Thread):
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         server.bind((IP, PORT))
-        threads = []
+        self.adduser(server)
 
-        server.listen(5)
+    def adduser(self, arg):
+
+        arg.listen(5)
         while True:
             print("Waiting to connect with client...")
             global conn
-            (conn, (ip, port)) = server.accept()
-            newthread = ClientThread(ip, port, window)
+            (conn, (ip, port)) = arg.accept()
+            newthread = ClientThread(ip, port)
             newthread.start()
             threads.append(newthread)
 
@@ -52,11 +46,11 @@ class ServerThread(Thread):
 
 
 class ClientThread(Thread):
-    def __init__(self, ip, port, window):
+    def __init__(self, ip, port):
         Thread.__init__(self)
-        self.window = window
         self.ip = ip
         self.port = port
+
         print("Come to us new client his ip is: " + ip + ":" + str(port))
 
     def run(self):
@@ -64,17 +58,15 @@ class ClientThread(Thread):
             try:
                 global conn
                 data = conn.recv(2048)
-                window.chat.append(data.decode("utf-8"))
+                clients.append(conn)
+                send(data.decode("utf-8"), conn)
+                print(data.decode("utf-8"))
             except ConnectionResetError:
-                window.chat.append("User: " + self.ip + " disconnect")
+                print("User: " + self.ip + " disconnect")
                 break
 
 
 if __name__ == '__main__':
-    window.btnSend.clicked.connect(send)
-    window.setWindowTitle("Server Chat")
-    server = ServerThread(window)
+    server = ServerThread()
     server.start()
-    window.exec()
-    sys.exit(app.exec_())
 
